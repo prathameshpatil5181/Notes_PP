@@ -2,10 +2,10 @@
 
 ## ⚙️ 1. Database Configuration
 
-📌 First, configure your database in `application.properties`
+First, configure your database in `application.properties`
 
 ```properties
-# 🗄️ DB_CONFIG
+# DB_CONFIG
 
 spring.datasource.url=jdbc:postgresql://localhost:5432/orbit
 spring.datasource.username=admin
@@ -20,7 +20,7 @@ spring.jpa.properties.hibernate.format_sql=false
 
 ## 🧩 2. Create Entity Class
 
-📌 Use `@Entity` to map your class to a database table
+Use `@Entity` to map your class to a database table
 
 ```java
 package com.orbyte.hospitalmvn.entity;
@@ -49,17 +49,17 @@ public class Patient {
 }
 ```
 
-💡 **What’s happening here?**
+**💡 What’s happening here?**
 
-* 🆔 `@Id` → Primary key
-* 🔄 `@GeneratedValue` → Auto increment
-* ⏱️ `@CreationTimestamp` → Auto set creation time
+* `@Id` → Primary key
+* `@GeneratedValue` → Auto increment
+* `@CreationTimestamp` → Auto set creation time
 
 ---
 
 ## 📦 3. Create JPA Repository
 
-📌 This interface helps you interact with the database easily
+This interface helps you interact with the database easily
 
 ```java
 package com.orbyte.hospitalmvn.repository;
@@ -70,7 +70,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PatientRespository extends JpaRepository<Patient, Long> {}
 ```
 
-💡 **Built-in methods like:**
+**💡 Built-in methods like:**
 
   * `findAll()`
   * `save()`
@@ -80,7 +80,7 @@ public interface PatientRespository extends JpaRepository<Patient, Long> {}
 
 ## 🧪 4. Test the Repository
 
-📌 Now let’s fetch data using a test class
+Now let’s fetch data using a test class
 
 ```java
 @SpringBootTest
@@ -100,18 +100,18 @@ public class PatientRepositoryTest {
 
 }
 ```
-## 5.Internal JPA Working
+## ⚙️ 5. Internal JPA Working
 
-* The Jpa repository is implement by the SimpleJpaRepository class
-* it uses EntityManager
+* The JPA repository is implemented by the `SimpleJpaRepository` class
+* It uses `EntityManager` under the hood
 
-## Entity Manager Lifecycle
+## ♻️ Entity Manager Lifecycle
 
 ![alt text](image.png)
 
-* When the persist call is made data is moved from transient to persistent state  and after successfull completion of txn data is stored in db else it rolled back
+* When the `persist` call is made, data is moved from **transient** to **persistent** state. After successful completion of the txn, data is stored in the DB, else it is rolled back.
 
-Below snipped is very intresting for understanding the `@Transactional` behavior.
+**💡 Note:** Below snippet is very interesting for understanding the `@Transactional` behavior.
 
 ## 💱 6. Database Transactions
 
@@ -129,11 +129,11 @@ Below snipped is very intresting for understanding the `@Transactional` behavior
     }
 ```
 
-output without Transactional
+Output **without** `@Transactional`
 
 ![alt text](image-1.png)
 
-snippet two with @Transactional
+Snippet two **with** `@Transactional`
 
 ``` java
     @Transactional
@@ -149,10 +149,12 @@ snippet two with @Transactional
 Output
 ![alt text](image-2.png)
 
-Now here if you see the only single querry to check the patient is executed and the same object is returned
+Now here if you see, only a single query to check the patient is executed, and the same object is returned!
 
 
-### 7. More annotations on entity
+### **🏷️ 7. More annotations on entity**
+
+---
 
 ```java
 @Table(
@@ -160,14 +162,95 @@ Now here if you see the only single querry to check the patient is executed and 
         uniqueConstraints = {
                 @UniqueConstraint(name="unique_patient_email",columnNames = {"email"}),
                 @UniqueConstraint(name="unique_email_and_name",columnNames = {"name","email"})
+
         },
         indexes={
-              @Index(name = "email_idx",columnList = "email")  
+              @Index(name = "email_idx",columnList = "email")
         }
+
 )
 ```
 
 **Explanation:**
-* **`name`**: Explictly sets the database table name to "Patient".
+* **`name`**: Explicitly sets the database table name to "Patient".
 * **`uniqueConstraints`**: Prevents duplicate entries for the `email` column alone, and for the combination of `name` + `email`.
 * **`indexes`**: Creates a database index on the `email` column to greatly speed up searches and lookups.
+
+* `@Enumrated` - this tag can be used to store enum values in the database. By default, it stores the enum values as strings, but it can also be configured to store them as integers.
+
+**💡 Note:** The `@Column` annotation has many options. You can check them by ctrl+clicking on the annotation in your IDE.
+
+### 🛠️ Extras - FlyWay migration tool
+
+* Flyway is a database migration tool used to manage schema changes using versioned SQL scripts.
+
+* It ensures all environments (dev, test, prod) stay consistent and synchronized.
+
+* Each migration file is applied in order and tracked in a history table.
+
+* Flyway replaces manual DB updates and is safer than using Hibernate ddl-auto.
+
+**Data seeding - can be done using adding some properties use google that time**
+
+### **🔍 8. JPA Query Methods**
+
+---
+
+Jpa query method help us to query the data in db using simple class methods. we donot have to manually create the data base queries.
+
+for more method visit the doc: http://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html
+
+examples:  **List<User> findByEmailAddressAndLastname(String emailAddress, String lastname);**
+
+| Keyword | Sample Method | JPQL Snippet |
+|-----------|----------------|----------------|
+| Distinct  | findDistinctByLastnameAndFirstname | select distinct … where x.lastname = ?1 and x.firstname = ?2 |
+| And       | findByLastnameAndFirstname        | … where x.lastname = ?1 and x.firstname = ?2 |
+| Or        | findByLastnameOrFirstname         | … where x.lastname = ?1 or x.firstname = ?2 |
+
+
+## **📝 9. JPQL & `@Query`**
+
+**JPQL**
+
+* Object-based query language (works on entities, not tables).
+Database-independent, used with JPA.
+* @Query Used in Spring Data JPA to write custom JPQL/SQL queries.
+Helps handle complex queries beyond method names.
+
+```java
+@Query("SELECT p from Patient p where p.bloodGroup=?1") // jpql
+List<Patient> findByBloodGroup(@Param("bloodGroup") String bloodGroup);
+```
+
+**Group by query (Non-idea method)**
+```java
+@Query("SELECT p.bloodGroup, count(p.name) from Patient p GROUP BY p.bloodGroup")
+List<Object[]> countByBloodGroup();
+```
+
+**Native Query**
+
+Used to tell the jpa to run the query as its in `@Query` annotation.
+use the `nativeQuery=true` attribute. 
+
+```java
+@Query(value = "SELECT * FROM Patient", nativeQuery = true)
+List<Patient> findAllPatients();
+```
+### 🔄 Updating the record in database
+
+To update the record in datebase we need use below 2 annotation along with `@query`
+
+
+* `@Modifying` - this tells jpa that this query is modifying record
+* `@Transactional` - this is a transaction inside the db if not done jpa will throw the error
+
+e.g.
+
+```java
+@Transactional
+@Modifying
+@Query("UPDATE Patient p SET p.name=:name WHERE p.id=:id ")
+int updateNameWithId(@Param("name") String name,@Param("id") Long id);
+```
