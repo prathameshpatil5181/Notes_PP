@@ -254,3 +254,50 @@ e.g.
 @Query("UPDATE Patient p SET p.name=:name WHERE p.id=:id ")
 int updateNameWithId(@Param("name") String name,@Param("id") Long id);
 ```
+
+**DTO Projection**
+
+This helps in matching the fetched data with your DTO. In this method you create the DTO and provide its reference to the repository and return data will be casted in that to format
+
+e.g.
+
+```java 
+@Query("SELECT new com.orbyte.hospitalmvn.dto.BloodGroupCountResponseDTO(p.bloodGroup, count(p.name)) from Patient p GROUP BY p.bloodGroup")
+List<BloodGroupCountResponseDTO> countByBloodGroup();
+```
+
+Output
+```bash
+Hibernate: select p1_0.blood_group,count(p1_0.name) from patient p1_0 group by p1_0.blood_group
+[BloodGroupCountResponseDTO(BloodGroup=A_POSITIVE, count=2), BloodGroupCountResponseDTO(BloodGroup=AB_POSITIVE, count=1), BloodGroupCountResponseDTO(BloodGroup=O_POSITIVE, count=2)]
+```
+
+## Pagination with Pageable
+
+Pegeable is a springboot class that deal with page data. It help us to fetch the data in page wise.
+
+example 
+
+```Java
+@Query(value = "SELECT * FROM Patient", nativeQuery = true)
+Page<Patient> findAllPatients(Pageable pageable);
+
+ public void testFindAllPatientsNativeQuery(){
+     Page<Patient>page = patientRespository.findAllPatients(PageRequest.of(0,2));
+
+    for (Patient patient : page) {
+        System.out.println(patient);
+    }
+
+}
+
+```
+
+output 
+``` bash
+Hibernate: SELECT * FROM Patient fetch first ? rows only
+Hibernate: select count(1) FROM Patient
+Patient{id=2, name='Diya Patel', created_on=2026-04-12T21:43:04.235602, email='diya.patel@example.com', gender='FEMALE'}
+Patient{id=3, name='Dishant Verma', created_on=2026-04-12T21:43:04.235602, email='dishant.verma@example.com', gender='MALE'}
+
+```
